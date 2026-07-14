@@ -1,0 +1,37 @@
+[pdu]
+# Prod PDU outlet
+PDU_OUTLET = 1
+
+# Testing PDU outlet
+# PDU_OUTLET = 11
+
+
+[network]
+BACKUP_IP = 192.168.1.4
+WORKING_IP = 192.168.7.2
+PROFILE_PREFIX = HASSIO-VLAN
+
+# Prod switchport
+SWITCHPORT = 2
+
+# Testing switchport
+# SWITCHPORT = 13
+
+
+[ipxe]
+BOOT_IPXE_FILE = /srv/www/ipxe/boot.ipxe
+BOOT_IPXE_BACKUP = /srv/www/ipxe/boot.ipxe.backup
+
+
+[timeouts]
+# Delay for DHCP + Clonezilla on iPXE boot
+DHCP = 120
+
+# Additional delay before IP checks after DHCP above
+CZ_START = 30
+
+# Clonezilla should finish in 900 seconds max
+CZ_FINISH = 900
+
+# Delay before PDU off / PDU on after Clonezilla finished
+PDU_OFF_DELAY = 20

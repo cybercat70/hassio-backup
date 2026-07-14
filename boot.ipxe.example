@@ -1,0 +1,87 @@
+#!ipxe
+
+dhcp
+set base-url http://ipxe.example
+
+:start
+menu iPXE Boot
+item --key x exit	Exit iPXE and continue BIOS boot
+item --gap --	---------- OS Install ----------
+item debian13		Debian 13 Network Installer
+item debian12		Debian 12 Network Installer
+item centos7		CentOS 7 Network Installer
+item --gap --	------------ Tools -------------
+item czilla33int	Clonezilla 3.3 (Interactive)
+item --gap --	-------- Batch Backups ---------
+item hassiobatch	HASSIO Entire System Backup
+item --gap -- 	-------- Bootstrapping ---------
+item server		Baremetal Lab Hosts Install
+item vm			Proxmox VMs Install
+item --gap -- 	------- Advanced options -------
+item shell		Drop to iPXE shell
+item reboot		Reboot
+# choose --default hassiobatch --timeout 5000 target && goto ${target} || goto cancel
+# choose --default server --timeout 5000 target && goto ${target} || goto cancel
+choose --default vm --timeout 5000 target && goto ${target} || goto cancel
+
+:debian13
+kernel ${base-url}/debian13/linux ip=dhcp
+initrd ${base-url}/debian13/initrd.gz
+boot
+
+:debian12
+kernel ${base-url}/debian12/linux ip=dhcp
+initrd ${base-url}/debian12/initrd.gz
+boot
+
+:centos7
+kernel ${base-url}/centos7/vmlinuz ip=dhcp
+initrd ${base-url}/centos7/initrd.img
+boot
+
+:czilla33int
+kernel ${base-url}/clonezilla33/vmlinuz
+initrd ${base-url}/clonezilla33/initrd.img
+imgargs vmlinuz initrd=initrd.img boot=live union=overlay username=user config components loglevel=3 hostname=clonezilla-3-3-0-33 noswap edd=on nomodeset enforcing=0 noeject locales=en_US.UTF-8 keyboard-layouts=us ocs_live_run="ocs-live-general" ocs_live_extra_param="" ocs_live_batch="no" ocs_screen_blank="no" vga=791 net.ifnames=0 nosplash i915.blacklist=yes radeonhd.blacklist=yes nouveau.blacklist=yes vmwgfx.enable_fbdev=1 ocs_1_cpu_udev scsi_mod.use_blk_mq=0 nvme.poll_queues=1 fetch=${base-url}/clonezilla33/filesystem.squashfs
+boot
+
+:hassiobatch
+kernel ${base-url}/clonezilla33/vmlinuz
+initrd ${base-url}/clonezilla33/initrd.img
+imgargs vmlinuz initrd=initrd.img boot=live union=overlay username=user config components loglevel=3 hostname=hassio noswap edd=on nomodeset enforcing=0 noeject locales=en_US.UTF-8 keyboard-layouts=us ocs_live_run="ocs-sr -q2 -j2 -nogui -batch -z9p -i 4096 -sfsck -senc -sc -p poweroff savedisk autoname all" ocs_live_extra_param="" ocs_live_batch="yes" ocs_screen_blank="no" ocs_prerun1="dhclient -v eth0" ocs_repository="smb://BACKUP_HOST;backup_user:backup_password@backup_host.example/backup_path/" vga=791 net.ifnames=0 nosplash i915.blacklist=yes radeonhd.blacklist=yes nouveau.blacklist=yes vmwgfx.enable_fbdev=1 ocs_1_cpu_udev scsi_mod.use_blk_mq=0 nvme.poll_queues=1 fetch=${base-url}/clonezilla33/filesystem.squashfs
+boot
+
+:server
+set mac ${net0/mac}
+set hypmac ${mac:hexhyp}
+kernel ${base-url}/debian13/linux auto=true priority=critical url=${base-url}/servers/${hypmac}.cfg interface=auto
+initrd ${base-url}/debian13/initrd.gz
+boot
+
+:vm
+set mac ${net0/mac}
+set hypmac ${mac:hexhyp}
+kernel ${base-url}/debian13/linux auto=true priority=critical url=${base-url}/vms/${hypmac}.cfg interface=auto
+initrd ${base-url}/debian13/initrd.gz
+boot
+
+:exit
+exit
+
+:shell
+echo Type 'exit' to get the back to the menu
+shell
+set menu-timeout 0
+set submenu-timeout 0
+goto start
+
+:reboot
+reboot
+
+:cancel
+echo You cancelled the menu, dropping you to shell
+
+:back
+set submenu-timeout 0
+clear submenu-default
+goto start
