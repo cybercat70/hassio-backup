@@ -5,9 +5,9 @@
 - [x] Replace token-based Vault auth with AppRole (or TLS cert auth, which would
       be even better given the lab PKI infrastructure).
 
-## In progress
+## Tentative
 
-- [?] Replace Telnet-based PDU management mech by SNMP v3.
+- [ ] Replace Telnet-based PDU management mech by SNMP v3.
       A quick-and-dirty testing script confirmed SNMP v3 can be used 
       but looks like it's even slower than Telnet.
       The benefits of encryption are also questionable. 
