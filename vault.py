@@ -51,7 +51,7 @@ def get_vault_credentials(device):
   ''' Check if we authenticated '''
   if not client.is_authenticated():
     print (f"{C.RED}[Fatal]{C.RESET} Vault authentication failed.")
-    exit(1)
+    sys.exit(1)
 
   ''' For KV v2 mount_point is mandatory '''
   secret = client.secrets.kv.v2.read_secret_version(path="secrets", mount_point="hassio", raise_on_deleted_version=True)
