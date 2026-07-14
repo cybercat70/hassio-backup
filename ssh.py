@@ -42,26 +42,6 @@ def stop_hassio_core(hassio_docker_id):
     ssh.close()
 
 
-''' is_hassio_stopped in not in use anymore '''
-def is_hassio_stopped(HASSIO_LOG):
-  ssh = ssh_session()
-
-  try:
-    log_exists = True
-    while log_exists:
-      log(f"{C.GREEN}[Docker]{C.RESET} Waiting until HASSIO container stopped...")
-      stdin, stdout, stderr = ssh.exec_command(f"[ -f {HASSIO_LOG} ] && echo \"1\" || echo \"0\"")
-      log_exists = int(stdout.read().decode())
-
-      if log_exists:
-        time.sleep(2)
-
-    log(f"{C.GREEN}[Docker]{C.RESET} HASSIO container stopped.")
-
-  finally:
-    ssh.close()
-
-
 def hassio_reboot():
   ssh = ssh_session()
 
