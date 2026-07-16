@@ -26,9 +26,7 @@ via a PoE+ injector connected to an APC AP7902 PDU.
 The home infra includes a HashiCorp Vault instance, an ISC DHCP server, and NGINX, which handles 
 HTTPS connections to the Vault instance and to the UniFi controller, as well as HTTP requests for iPXE. 
 
-> The PDU is managed via Telnet on a dedicated port, since its age and capabilities 
-> make managing it via SSH extremely slow and difficult to configure.
-
+The PDU is managed via SNMPv3 protocol.
 
 ## How it works
 
@@ -68,7 +66,7 @@ The backup setup works as follows, step by step:
  vault.py    ssh.py    unifi.py    pducontrol.py   ipxe.py    icmplib
    |           |           |             |           |         (ping)
   Vault    HA host     UniFi ctrl     APC PDU     boot.ipxe
-(AppRole)   (SSH)     (HTTPS/REST)   (Telnet)    (local file)
+(AppRole)   (SSH)     (HTTPS/REST)   (SNMPv3)    (local file)
 ```
 
 Shared helpers: [`diag.py`](diag.py) (timestamped file + console logging) and
@@ -79,6 +77,7 @@ Shared helpers: [`diag.py`](diag.py) (timestamped file + console logging) and
 
 - Python 3.12+
 - The Python packages in [`requirements.txt`](requirements.txt)
+- "snmp" (Debian/Ubuntu) or "net-snmp-utils" (RHEL/Centos) package installed.
 - A reachable HashiCorp Vault, UniFi controller, APC PDU, and iPXE/Clonezilla boot server.
 
 
@@ -105,7 +104,7 @@ A .env must exist in the working directory. Start from [`.env.example`](.env.exa
 
 ```dotenv
 VAULT_ADDR=https://vault.example
-LAB_CA_CERT=/path/to/cert/example-ca.crt
+CA_CERT=/path/to/cert/example-ca.crt
 VAULT_ROLE=aaaabbbb-...
 ID=ccccdddd-...
 ```
@@ -126,10 +125,9 @@ Key              Example
 hassio_host 	 homeassistant.example
 hassio_username  administrator
 hassio_password  very_secure_password
-pdu_username	 apcadmin
-pdu_password	 pdu_very_secure_password
+snmp_user	 snmpadmin
+snmp_password	 snmp_very_secure_password
 pdu_host         pdu01.example
-pdu_port         10023
 unifi_url        https://unifi.example
 unifi_username   unifiadmin
 unifi_password   unifi_very_secure_password

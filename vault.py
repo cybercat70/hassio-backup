@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import os
 import sys
+import os
 import hvac
 from dotenv import load_dotenv
 from colorprint import C
@@ -17,7 +17,7 @@ def get_vault_credentials(device):
 
   conf_vars = {}
 
-  for var in ("VAULT_ADDR", "LAB_CA_CERT", "VAULT_ROLE", "ID"):
+  for var in ("VAULT_ADDR", "CA_CERT", "VAULT_ROLE", "ID"):
     var_value = os.getenv(var)
 
     if not var_value:
@@ -26,7 +26,7 @@ def get_vault_credentials(device):
 
     conf_vars[var] = var_value
 
-  client = hvac.Client(url=conf_vars["VAULT_ADDR"], verify=conf_vars["LAB_CA_CERT"])
+  client = hvac.Client(url=conf_vars["VAULT_ADDR"], verify=conf_vars["CA_CERT"])
 
   if client.sys.is_sealed():
     print(f"{C.RED}[Fatal]{C.RESET} Vault is sealed, unseal it first.")
@@ -60,10 +60,9 @@ def get_vault_credentials(device):
   match device:
     case "pdu":
       return {
-        "pdu_username": data["pdu_username"],
-        "pdu_password": data["pdu_password"],
         "pdu_host": data["pdu_host"],
-        "pdu_port": data["pdu_port"],
+        "snmp_user": data["snmp_user"],
+        "snmp_password": data["snmp_password"],
       }
 
     case "ssh":
@@ -78,7 +77,7 @@ def get_vault_credentials(device):
         "unifi_url": data["unifi_url"],
         "unifi_username": data["unifi_username"],
         "unifi_password": data["unifi_password"],
-        "ca_cert": conf_vars["LAB_CA_CERT"],
+        "ca_cert": conf_vars["CA_CERT"],
       }
 
     # Special case: get_vault_credentials will fail if Vault is inaccessible or .env is incorrect.
