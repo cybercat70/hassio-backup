@@ -125,7 +125,7 @@ Key              Example
 hassio_host 	 homeassistant.example
 hassio_username  administrator
 hassio_password  very_secure_password
-snmp_user	 snmpadmin
+snmp_user        snmpadmin
 snmp_password	 snmp_very_secure_password
 pdu_host         pdu01.example
 unifi_url        https://unifi.example
