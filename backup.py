@@ -72,10 +72,10 @@ def main():
     print(f"{C.RED}[Fatal]{C.RESET} SNMP package not installed, exiting.")
     sys.exit(1)
 
-  ''' Check if Vault is accessible and .env is correct - if something wrong, get_vault_credentials will fail and exit. '''
+  # Check if Vault is accessible and .env is correct - if something wrong, get_vault_credentials will fail and exit.
   get_vault_credentials("vault")
 
-  ''' Read the .cfg file and validate it '''
+  # Read the .cfg file and validate it
   if not os.path.exists("backup.cfg"):
     print(f"{C.RED}[Fatal]{C.RESET} File backup.cfg not found, exiting.")
     sys.exit(1)
@@ -100,44 +100,44 @@ def main():
     sys.exit(1)
 
 
-  ''' Clear the logfile on start '''
+  # Clear the logfile on start
   with open("backup.log", "w") as backup_log:
     timestamp = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
     print(f"[{timestamp}] HASSIO backup started.", file=backup_log)
 
 
-  ''' Check of iPXE menudefault is "hassiobatch" '''
+  # Check of iPXE menudefault is "hassiobatch"
   ipxe.check_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP)
 
 
-  ''' Stop HASSIO Docker container '''
+  # Stop HASSIO Docker container
   hassio_docker_id = ssh.check_hassio_container()
   old_id = hassio_docker_id
 
   while hassio_docker_id:
     ssh.stop_hassio_core(hassio_docker_id)
-    ''' Check if the container fully stopped '''
+    # Check if the container fully stopped
     hassio_docker_id = ssh.check_hassio_container()
 
   log(f"{C.GREEN}[Docker]{C.RESET} Container ID {old_id} stopped.")
 
 
-  ''' Initiate HASSIO OS reboot '''
+  # Initiate HASSIO OS reboot
   log(f"{C.GREEN}[Reboot]{C.RESET}")
 #  input("Press Enter for HASSIO reboot.")
   ssh.hassio_reboot()
   time.sleep(5)
 
 
-  ''' Changing VLAN7 -> VLAN1 on the UniFi switchport (module "unifi.py") '''
+  # Changing VLAN7 -> VLAN1 on the UniFi switchport (module "unifi.py")
   vlan_operation_result = unifi.set_port_vlan(PROFILE_PREFIX, SWITCHPORT, 1)
 
 
-  ''' Wait DHCP_DELAY (backup.cfg) seconds - a safety delay because DHCP + Clonezilla manage backup IP back and forth '''
+  # Wait DHCP_DELAY (backup.cfg) seconds - a safety delay because DHCP + Clonezilla manage backup IP back and forth
   safety_delay(DHCP_DELAY, f"{C.GREEN}[DHCP]{C.RESET} Taking a delay for DHCP + Clonezilla:")
 
 
-  ''' Interfaces waiting stages (backup IP up -> clonezilla works -> backup IP down) '''
+  # Interfaces waiting stages (backup IP up -> clonezilla works -> backup IP down)
   stages = [
     {
       "stage": "Clonezilla-start",	# Waiting for 10.11.1.4 to be UP (Clonezilla started)
@@ -167,49 +167,49 @@ def main():
     if stage_result != "success":
       log(f"{C.RED}[{stage["stage"]}]{C.RESET} Backup process failed with {C.RED}{stage_result.upper()}{C.RESET}, exiting.")
 
-      ''' Restore boot.ipxe from backup '''
+      # Restore boot.ipxe from backup
       ipxe.revert_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP)
       sys.exit(1)
 
 
-  ''' Turning HASSIO PDU outlet off '''
+  # Turning HASSIO PDU outlet off
   safety_delay(PDU_OFF_DELAY, f"{C.GREEN}[PDU]{C.RESET} HASSIO box will be powered off in")
   result = pducontrol.outlet_control(PDU_OUTLET, "off")
   if not result:
     log(f"{C.RED}[PDU]{C.RESET} Backup process failed during turning HASSIO box off, please check manually.")
-    ''' Restore boot.ipxe from backup '''
+    # Restore boot.ipxe from backup
     ipxe.revert_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP)
     sys.exit(1)
 
 
-  ''' Changing VLAN1 -> VLAN7 on the UniFi switchport '''
+  # Changing VLAN1 -> VLAN7 on the UniFi switchport
   vlan_operation_result = unifi.set_port_vlan(PROFILE_PREFIX, SWITCHPORT, 7)
   time.sleep(5)
 
 
-  ''' Turning HASSIO PDU outlet on '''
+  # Turning HASSIO PDU outlet on
   log(f"{C.GREEN}[PDU]{C.RESET} Powering on HASSIO box.")
   result = pducontrol.outlet_control(PDU_OUTLET, "on")
   if not result:
     log(f"{C.RED}[PDU]{C.RESET} Backup process failed during turning HASSIO box on, please check manually.")
-    ''' Restore boot.ipxe from backup '''
+    # Restore boot.ipxe from backup
     ipxe.revert_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP)
     sys.exit(1)
 
 
-  ''' Waiting for HASSIO to boot '''
+  # Waiting for HASSIO to boot
   stage_result = stage_waiting("Reboot", "UP", WORKING_IP, 5, 240)
   if stage_result != "success":
     log(f"{C.RED}[BOOT]{C.RESET} HASSIO boot failed, exiting.")
     log(f"{C.RED}[BOOT]{C.RESET} Please check the device manually.")
 
-    ''' Restore boot.ipxe from backup '''
+    # Restore boot.ipxe from backup
     ipxe.revert_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP)
 
     sys.exit(1)
 
 
-  ''' Check if HASSIO container started '''
+  # Check if HASSIO container started
   log(f"{C.GREEN}[Docker]{C.RESET} Waiting for HASSIO container start...")
   hassio_docker_id = ""
   counter = 1
@@ -222,11 +222,11 @@ def main():
   log(f"{C.GREEN}[Docker]{C.RESET} Container ID {C.GREEN}{hassio_docker_id}{C.RESET} started.")
 
 
-  ''' Restore boot.ipxe from backup '''
+  # Restore boot.ipxe from backup
   ipxe.revert_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP)
 
 
-  ''' Verify the backup integrity (?) '''
+  # Verify the backup integrity (?)
   pass
 
 

@@ -7,10 +7,9 @@ from dotenv import load_dotenv
 from colorprint import C
 
 
-'''
----------------------------------------------------------------------------------------
- This sub is getting credentials from Vault
---------------------------------------------------------------------------------------- '''
+# ------------------------------------------------------------
+#    This sub is getting credentials from Vault
+# ------------------------------------------------------------
 def get_vault_credentials(device):
 
   load_dotenv(override=True)
@@ -32,7 +31,7 @@ def get_vault_credentials(device):
     print(f"{C.RED}[Fatal]{C.RESET} Vault is sealed, unseal it first.")
     sys.exit(1)
 
-  ''' AppRole auth '''
+  # AppRole auth
   try:
     client.auth.approle.login(role_id = conf_vars["VAULT_ROLE"], secret_id = conf_vars["ID"])
 
@@ -48,12 +47,12 @@ def get_vault_credentials(device):
     print(f"{C.RED}[Fatal]{C.RESET} Vault is unavailable.")
     sys.exit(1)
 
-  ''' Check if we authenticated '''
+  # Check if we authenticated
   if not client.is_authenticated():
     print (f"{C.RED}[Fatal]{C.RESET} Vault authentication failed.")
     sys.exit(1)
 
-  ''' For KV v2 mount_point is mandatory '''
+  # For KV v2 mount_point is mandatory
   secret = client.secrets.kv.v2.read_secret_version(path="secrets", mount_point="hassio", raise_on_deleted_version=True)
   data = secret["data"]["data"]
 

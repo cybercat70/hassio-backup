@@ -75,10 +75,10 @@ def set_port_vlan(profile_prefix, port_idx, vlan):
 
   session, creds = unifi_auth()
 
-  ''' Get switch ID '''
+  # Get switch ID
   switch_id = get_switch_device_id(session, creds)
 
-  ''' Get all Unifi controller data '''
+  # Get all Unifi controller data
   url = f"{creds['unifi_url']}/api/s/default/stat/device"
   response = session.get(url, timeout=10)
   response.raise_for_status()
@@ -86,7 +86,7 @@ def set_port_vlan(profile_prefix, port_idx, vlan):
 
   devices = all_devices.get("data", [])
 
-  ''' We have 4 Ubiquity devices in {devices}, let's found the switch's chapter and get Eth port overrides '''
+  # We have 4 Ubiquity devices in {devices}, let's found the switch's chapter and get Eth port overrides
   for d in devices:
     if d.get("_id") == switch_id:
       port_overrides = d.get("port_overrides", [])
@@ -101,7 +101,7 @@ def set_port_vlan(profile_prefix, port_idx, vlan):
 
   port_found = False
 
-  ''' Rewriting portconf_id for port_idx (HASSIO_SWITCHPORT) '''
+  # Rewriting portconf_id for port_idx (HASSIO_SWITCHPORT)
   for p in port_overrides:
     if p.get("port_idx") == port_idx:
       p["portconf_id"] = portconf_id
@@ -113,7 +113,7 @@ def set_port_vlan(profile_prefix, port_idx, vlan):
     log(f"{C.RED}[UniFi]{C.RESET} Port {C.RED}{port_idx}{C.RESET} not found in port_overrides.")
     raise RuntimeError(f"\t {C.RED}[UniFi]{C.RESET} Port {C.RED}{port_idx}{C.RESET} not found in port_overrides.")
 
-  ''' Putting new port overrides to the switch '''
+  # Putting new port overrides to the switch
   url = f"{creds['unifi_url']}/api/s/default/rest/device/{switch_id}"
   payload = {
     "port_overrides": port_overrides

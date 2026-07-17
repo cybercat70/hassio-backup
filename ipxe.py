@@ -12,32 +12,32 @@ def check_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP):
 
   fixed_boot_ipxe = []
   for line in lines:
-    ''' Processing all default setting in boot.ipxe '''
+    # Processing all default setting in boot.ipxe
     if ("choose --default" in line):
 
-      ''' First, check if hassiobatch default is set - if so then just return '''
+      # First, check if hassiobatch default is set - if so then just return
       if line.lstrip().startswith("choose --default hassiobatch"):
         log(f"{C.GREEN}[iPXE]{C.RESET} File boot.ipxe has default menuitem set correctly, no changes required.")
         return
 
-      ''' If HASSIO backup menuitem commented out - we need to uncomment it '''
+      # If HASSIO backup menuitem commented out - we need to uncomment it
       if line.lstrip().startswith("# choose --default hassiobatch"):
         fixed_boot_ipxe.append(line.replace("# ", ""))
         continue
 
-      ''' All other defaults should be commented out '''
+      # All other defaults should be commented out
       if not ("hassiobatch" in line) and not (line.lstrip().startswith("#")):
         fixed_boot_ipxe.append("# " + line)
         continue
 
-      ''' The line doesn't contain "choose --default" so just append it as is '''
+    # The line doesn't contain "choose --default" so just append it as is
     fixed_boot_ipxe.append(line)
 
-  ''' Creating a backup '''
+  # Creating a backup
   with open(BOOT_IPXE_BACKUP, "w") as f:
     f.writelines(lines)
 
-  ''' Fixed boot.ipxe '''
+  # Fixed boot.ipxe
   with open(BOOT_IPXE_FILE, "w") as f:
     f.writelines(fixed_boot_ipxe)
 

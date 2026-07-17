@@ -7,7 +7,7 @@ def log(msg):
   with open(f"backup.log", "a") as backup_log:
     print(f"{msg}")
 
-    ''' Remove coloring ANSI sequences before putting to logfile '''
+    # Remove coloring ANSI sequences before putting to logfile
     for ansi_code in (C.GREEN, C.RED, C.RESET, "\r"):
       msg = msg.replace(ansi_code, "")
 
