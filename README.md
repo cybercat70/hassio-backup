@@ -179,6 +179,39 @@ host hassio-backup-temp
 }
 ```
 
+### AP7902 SNMP v3 configuration specifics
+
+- Login to the Web management GUI of AP7902.
+- Navigate to Administration -> Network -> SMNPv3 -> access
+- Enable SMNPv3:
+
+<img src="images/snmp1.jpg" width="600">
+
+- Navigate to Administration -> Network -> SMNPv3 -> user profiles
+  and choose a user profile:
+
+<img src="images/snmp2.jpg" width="600">
+
+- Set the username, authentication passphrase, choose MD5 as auth protocol (secirity level "authNoPriv").
+
+  I **do not** recommend setting a privacy protocol or privacy passphrase.
+  This enables the highest SNMPv3 security level (authPriv), which uses both authentication and encryption.
+  On the AP7902, however, authPriv causes a severe performance impact because the hardware is simply too old
+  and underpowered, even with the latest firmware installed.
+
+<img src="images/snmp3.jpg" width="600">
+
+- Navigate to Administration -> Network -> SMNPv3 -> access control
+
+<img src="images/snmp4.jpg" width="600">
+
+- Ensure that the user is enabled.
+- (optional) As an additional security measure, restrict this user
+  to the specific IP address or FQDN of the host that will be sending management requests,
+  instead of leaving the default value of 0.0.0.0.
+- **Reboot the PDU's management interface.** The SNMPv3 settings will not take effect until it has been restarted
+  (this does not reset or reboot the device itself).
+
 
 ## Usage
 
