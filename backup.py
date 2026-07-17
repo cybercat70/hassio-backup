@@ -4,6 +4,7 @@ import sys
 import os
 import time
 import configparser
+from shutil import which
 from datetime import datetime
 from icmplib import ping
 import unifi
@@ -66,6 +67,11 @@ def safety_delay(delay, msg):
 
 
 def main():
+  # Check if SNMP package installed
+  if which("snmpset") is None:
+    print(f"{C.RED}[Fatal]{C.RESET} SNMP package not installed, exiting.")
+    sys.exit(1)
+
   ''' Check if Vault is accessible and .env is correct - if something wrong, get_vault_credentials will fail and exit. '''
   get_vault_credentials("vault")
 
