@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+'''Unattended bare-metal backup orchestrator for a Home Assistant host.'''
 
 import sys
 import os
@@ -17,6 +18,25 @@ from colorprint import C
 
 
 def check_interface_state(ip, stage, probe_count):
+  '''Pinsg a host and report whether it is in the expected up/down state.
+
+  Parameters
+  ----------
+  ip : str
+    IP address to probe with ICMP echo requests.
+  stage : str
+    Current stage name. For "Clonezilla-finish" the logic is inverted
+    (success means the host is *down*).
+    For any other stage success means the host is *up*.
+  probe_count : int
+    Number of ICMP echo probes to send.
+
+  Returns
+  -------
+  bool
+    "True" when the host is in the state expected for "stage".
+  '''
+
   result = ping (
     ip,
     count = probe_count,
@@ -31,6 +51,27 @@ def check_interface_state(ip, stage, probe_count):
 
 
 def stage_waiting(stage, iface_state, ip, probe_count, timeout):
+  '''Polls an interface until it reaches a target state or times out.
+
+  Parameters
+  ----------
+  stage : str
+    Stage name, used for logging and passed through to :func:"check_interface_state".
+  iface_state : str
+    Human-readable target state, "UP" or "DOWN" (affects logging color only).
+  ip : str
+    IP address of the interface to monitor.
+  probe_count : int
+    Number of ICMP echo probes to send.
+  timeout : int
+    Maximum time to wait, in seconds.
+
+  Returns
+  -------
+  str
+    "success" if the target state was reached, or "timeout" if the timeout elapsed first.
+  '''
+
   stage_start = time.monotonic()
   log(f"{C.GREEN}[{stage}]{C.RESET} Waiting for {ip} to be {iface_state} (timeout = {timeout} sec)...")
 
@@ -58,6 +99,20 @@ def stage_waiting(stage, iface_state, ip, probe_count, timeout):
 
 
 def safety_delay(delay, msg):
+  '''Sleeps for a fixed period while printing a live countdown.
+
+  Parameters
+  ----------
+  delay : int
+    Total delay in seconds (counted down in 5-second steps).
+  msg : str
+    Message prefix printed before the remaining-seconds counter.
+
+  Returns
+  -------
+  None
+  '''
+
   sdelay = delay
   while sdelay > 0:
     print(f"\r{msg} {sdelay} sec.", end="")
@@ -67,6 +122,24 @@ def safety_delay(delay, msg):
 
 
 def main():
+  '''Runs the full unattended bare-metal backup workflow.
+
+  Parameters
+  ----------
+  None
+    Configuration is read from "backup.cfg" and secrets from Vault.
+
+  Returns
+  -------
+  None
+    The function never returns normally, it calls "sys.exit(0)" on
+    success and "sys.exit(1)' on any fatal error.
+    Orchestrates: iPXE default fixup, stopping the HA container,
+    rebooting the host, moving the switch port to the backup VLAN,
+    waiting for Clonezilla to run, power-cycling the PDU outlet,
+    restoring the operational VLAN, and waiting for Home Assistant to come back online.
+  '''
+
   # Check if SNMP package installed
   if which("snmpset") is None:
     print(f"{C.RED}[Fatal]{C.RESET} SNMP package not installed, exiting.")
@@ -174,8 +247,9 @@ def main():
 
   # Turning HASSIO PDU outlet off
   safety_delay(PDU_OFF_DELAY, f"{C.GREEN}[PDU]{C.RESET} HASSIO box will be powered off in")
-  result = pducontrol.outlet_control(PDU_OUTLET, "off")
-  if not result:
+  pdu_reply = pducontrol.outlets_management(PDU_OUTLET, "off")
+
+  if "immediateOff(2)" not in pdu_reply[0]:
     log(f"{C.RED}[PDU]{C.RESET} Backup process failed during turning HASSIO box off, please check manually.")
     # Restore boot.ipxe from backup
     ipxe.revert_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP)
@@ -189,8 +263,9 @@ def main():
 
   # Turning HASSIO PDU outlet on
   log(f"{C.GREEN}[PDU]{C.RESET} Powering on HASSIO box.")
-  result = pducontrol.outlet_control(PDU_OUTLET, "on")
-  if not result:
+  pdu_reply = pducontrol.outlets_management(PDU_OUTLET, "on")
+
+  if "immediateOn(1)" not in pdu_reply[0]:
     log(f"{C.RED}[PDU]{C.RESET} Backup process failed during turning HASSIO box on, please check manually.")
     # Restore boot.ipxe from backup
     ipxe.revert_boot_ipxe(BOOT_IPXE_FILE, BOOT_IPXE_BACKUP)

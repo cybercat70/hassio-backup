@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+'''UniFi controller REST client for swapping switch port VLAN profiles.'''
 
 import requests
 import json
@@ -8,6 +9,25 @@ from colorprint import C
 
 
 def unifi_auth():
+  '''Authenticates against the UniFi controller and return a session.
+
+  Parameters
+  ----------
+  None
+    Credentials are fetched from Vault via get_vault_credentials("unifi").
+
+  Returns
+  -------
+  tuple(requests.Session, dict)
+    A tuple of the logged-in "requests.Session" and the credentials dict
+    (containing "unifi_url", "unifi_username", "unifi_password", "ca_cert").
+
+  Raises
+  ------
+  requests.HTTPError
+    If the login request returns a non-success status code.
+  '''
+
   creds = get_vault_credentials("unifi")
 
   session = requests.Session()
@@ -26,6 +46,21 @@ def unifi_auth():
 
 
 def get_switch_device_id(session, creds):
+  '''Returns the UniFi "_id" of the first switch device (type "usw").
+
+  Parameters
+  ----------
+  session : requests.Session
+    Authenticated UniFi controller session.
+  creds : dict
+    Credentials dict.
+
+  Returns
+  -------
+  str or None
+    The switch device "_id", or "None" if no switch is found.
+  '''
+
   device = session.get(f"{creds['unifi_url']}/api/s/default/stat/device", timeout=10)
   device.raise_for_status()
 
@@ -37,6 +72,21 @@ def get_switch_device_id(session, creds):
 
 
 def get_port_profiles(session, creds):
+  '''Returns the list of configured switch port profiles.
+
+  Parameters
+  ----------
+  session : requests.Session
+    Authenticated UniFi controller session.
+  creds : dict
+    Credentials dict.
+
+  Returns
+  -------
+  list[dict]
+    A list of "{"name": str, "_id": str}" dicts, one per port profile.
+  '''
+
   profiles = session.get(f"{creds['unifi_url']}/api/s/default/rest/portconf", timeout=10)
   profiles.raise_for_status()
 
@@ -51,11 +101,32 @@ def get_port_profiles(session, creds):
 
 
 def get_portconf_id(profile_prefix, port_profiles, vlan):
-  ''' 
-  We have just 2 profiles for HASSIO: HASSIO-VLAN1 and HASSIO-VLAN7
-    (now the prefix is configurable in .cfg).
-  Getting _id parameters for all port profiles.
+  '''Looks up the port-profile "_id" matching a prefix and VLAN.
+
+  Parameters
+  ----------
+  profile_prefix : str
+    Profile name prefix (e.g. "HASSIO-VLAN") from "backup.cfg".
+  port_profiles : list[dict]
+    Port profiles as returned by "get_port_profiles".
+  vlan : int
+    VLAN number appended to "profile_prefix" to form the profile name.
+
+  Returns
+  -------
+  str
+    The "_id" of the matching port profile.
+
+  Raises
+  ------
+  RuntimeError
+    If no profile named "{profile_prefix}{vlan}" exists.
   '''
+
+  # We have just 2 profiles for HASSIO: HASSIO-VLAN1 and HASSIO-VLAN7
+  #    (now the prefix is configurable in .cfg).
+  # Getting _id parameters for all port profiles.
+
   profile_name = f"{profile_prefix}{vlan}"
 
   profile = next(
@@ -71,6 +142,30 @@ def get_portconf_id(profile_prefix, port_profiles, vlan):
 
 
 def set_port_vlan(profile_prefix, port_idx, vlan):
+  '''Assigns a VLAN port profile to a specific switch port.
+
+  Parameters
+  ----------
+  profile_prefix : str
+    Profile name prefix (e.g. "HASSIO-VLAN") from "backup.cfg".
+  port_idx : int
+    Index of the switch port to reconfigure.
+  vlan : int
+    Target VLAN number combined with "profile_prefix" to select the
+    port profile to apply.
+
+  Returns
+  -------
+  bool
+    "True" if the port override was updated successfully, 
+    "False" if the controller rejected the update (HTTP error).
+
+  Raises
+  ------
+  RuntimeError
+    If the matching port profile or the target port is not found.
+  '''
+
   log(f"{C.GREEN}[UniFi]{C.RESET} Setting VLAN {vlan} on port {port_idx}...")
 
   session, creds = unifi_auth()
@@ -91,10 +186,8 @@ def set_port_vlan(profile_prefix, port_idx, vlan):
     if d.get("_id") == switch_id:
       port_overrides = d.get("port_overrides", [])
 
-  ''' 
-  Get port profiles: we can't work directly with VLAN assingnments 
-    so we just need to replace port profile parameters in port_overrides JSON section.
-  '''
+  # Get port profiles: we can't work directly with VLAN assingnments 
+  #   so we just need to replace port profile parameters in port_overrides JSON section.
   port_profiles = get_port_profiles(session, creds)
 
   portconf_id = get_portconf_id(profile_prefix, port_profiles, vlan)

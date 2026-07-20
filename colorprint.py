@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+'''ANSI color escape-code constants for console output.'''
 
 class C:
   BLACK   = "\033[30m"

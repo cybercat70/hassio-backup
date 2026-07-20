@@ -1,10 +1,31 @@
 #!/usr/bin/env python3
+'''APC PDU outlet power control over SNMP v3.'''
 
 import subprocess
 from vault import get_vault_credentials
 
 
 def outlets_management(outlet_id, action):
+  '''Powers a single PDU outlet on or off.
+
+  Parameters
+  ----------
+  outlet_id : int
+    Index number of the PDU outlet to control.
+  mode : str
+    Desired outlet state: "on" or "off".
+
+  Returns
+  -------
+  list[str]
+    Output of "snmpset" command
+
+  Raises
+  ------
+  ValueError exception
+    If input "action" is neither "on" nor "off"
+  '''
+
   commands = {
     "on": "1",
     "off": "2",

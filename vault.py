@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+'''Retrieves credentials from HashiCorp Vault using AppRole authentication.'''
 
 import sys
 import os
@@ -7,10 +8,23 @@ from dotenv import load_dotenv
 from colorprint import C
 
 
-# ------------------------------------------------------------
-#    This sub is getting credentials from Vault
-# ------------------------------------------------------------
 def get_vault_credentials(device):
+  '''
+  Returns the secrets for the requested device from Vault.
+
+  Parameters
+  ----------
+  device : str
+    Selects which subset of secrets to return ("pdu", "ssh", "unifi") 
+    or acts as a Vault health check ("vault").
+
+  Returns
+  -------
+  A dict with named credentials ("pdu", "ssh", "unifi")
+    or None ("vault")
+
+  Any Vault or .env file problem terminates the process.
+  '''
 
   load_dotenv(override=True)
 
