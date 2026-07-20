@@ -12,7 +12,7 @@ def outlets_management(outlet_id, action):
   ----------
   outlet_id : int
     Index number of the PDU outlet to control.
-  mode : str
+  action : str
     Desired outlet state: "on" or "off".
 
   Returns
